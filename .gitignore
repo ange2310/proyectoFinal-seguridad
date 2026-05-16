@@ -1,0 +1,15 @@
+﻿# ISOs y discos virtuales (muy pesados para Git)
+VMs/
+*.iso
+*.vdi
+*.vmdk
+*.ova
+*.ovf
+
+# Capturas pcap (opcionales - puedes quitarlos si quieres subirlos)
+capturas/*.pcap
+
+# Archivos del sistema
+Thumbs.db
+.DS_Store
+desktop.ini

@@ -13,3 +13,4 @@ capturas/*.pcap
 Thumbs.db
 .DS_Store
 desktop.ini
+.claude/

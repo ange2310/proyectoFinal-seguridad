@@ -69,12 +69,13 @@ proyectoFinal-seguridad/
 │   ├── topologia-red.md               ← diagrama y flujos
 │   └── informe-final.md               ← plantilla del informe
 ├── scripts/
-│   ├── setup-virtualbox.ps1
-│   ├── crear-vms.ps1
-│   ├── configurar-servidor-web.sh
-│   ├── configurar-servidor-lan.sh
-│   ├── ataques-desde-kali.sh
-│   └── paste-a-vm.ps1                 ← helper para pegar texto en consolas VBox
+│   ├── setup-virtualbox.ps1            ← instala VBox + crea NAT Network Red_WAN
+│   ├── crear-vms.ps1                   ← crea las 4 VMs con red correcta
+│   ├── port-forward-gui-pfsense.ps1    ← crea port forward 8443→443 al GUI
+│   ├── configurar-servidor-web.sh      ← Apache + IP estatica DMZ
+│   ├── configurar-servidor-lan.sh      ← SSH + IP estatica LAN
+│   ├── ataques-desde-kali.sh           ← bateria de ataques automatica
+│   └── paste-a-vm.ps1                  ← helper para pegar texto en consolas VBox
 ├── configs/
 │   ├── netplan-dmz.yaml
 │   ├── netplan-lan.yaml
@@ -112,38 +113,59 @@ Ejecuta como **administrador**:
 .\scripts\crear-vms.ps1
 ```
 
-### 4. Instalar los sistemas operativos en cada VM
-Sigue las guías en orden:
-1. [docs/00-copiar-pegar-en-vms.md](docs/00-copiar-pegar-en-vms.md) — cómo no tipear todo a mano
-2. [docs/01-guia-pfsense.md](docs/01-guia-pfsense.md) — configurar pfSense
-3. [docs/02-instalacion-apache.md](docs/02-instalacion-apache.md) — Apache en DMZ
+El segundo script crea las 4 VMs con esta topología:
+- **pfSense WAN** + **Kali** → en NAT Network `Red_WAN` (10.0.2.0/24), así Kali puede atacar a pfSense.
+- **pfSense LAN** + **Servidor-LAN** → en red interna `lan-net`.
+- **pfSense OPT1** + **Servidor-Web-DMZ** → en red interna `dmz-net`.
 
-### 5. Importar la configuración de pfSense (≈ 30 segundos) ⚡
-Esto te ahorra crear todas las reglas a mano:
-1. En el navegador, entra al GUI de pfSense (`https://<ip-de-pfsense>`)
-2. **Diagnostics → Backup & Restore**
-3. En "Restore Configuration":
+### 4. Instalar pfSense en su VM
+Arranca **pfSense-Firewall** desde VirtualBox y completa el instalador (acepta defaults).
+Al terminar, en la consola de pfSense:
+1. Opción **1** → asignar interfaces: WAN=`em0`, LAN=`em1`, OPT1=`em2`.
+2. Opción **2** → asignar IPs: LAN=`192.168.1.1/24`, OPT1=`192.168.2.1/24`.
+3. Anota la IP WAN que aparezca arriba (algo como `10.0.2.X`).
+
+### 5. Crear el port forward del GUI (para acceder desde tu navegador)
+```powershell
+.\scripts\port-forward-gui-pfsense.ps1 <IP-WAN-de-pfSense>
+```
+
+Ejemplo: `.\scripts\port-forward-gui-pfsense.ps1 10.0.2.4`
+
+### 6. Importar la configuración de pfSense (≈ 30 segundos) ⚡
+Esto te ahorra crear todas las reglas a mano (NAT outbound, port forwards, reglas WAN/LAN/DMZ, alias):
+1. En el navegador: `https://127.0.0.1:8443`
+2. Login default: `admin` / `pfsense`
+3. **Diagnostics → Backup & Restore**
+4. En "Restore Configuration":
    - **Restore area:** All
    - **Configuration file:** seleccionar [`configs/pfsense-config.xml`](configs/pfsense-config.xml)
    - Clic en **Restore Configuration**
-4. pfSense se reinicia → ya tienes todas las reglas, NAT, alias, etc.
+5. pfSense se reinicia → ya tienes todas las reglas, NAT, alias, etc.
 
 > ⚠️ **Importante sobre la contraseña admin:** la del XML está sanitizada (el hash
 > original se reemplazó por el default de pfSense para no exponer credenciales en
-> un repo público). Después de importar, entra con:
-> - Usuario: `admin`
-> - Contraseña: `pfsense`
->
-> Y **cámbiala inmediatamente** desde **System → User Manager → admin → Edit**.
-> Si el login default no funciona en tu versión de pfSense, resetea desde la consola:
-> opción **3 (Reset webConfigurator password)** → vuelves a tener `admin`/`pfsense`.
+> un repo público). Después de importar, entra con `admin` / `pfsense` y **cámbiala
+> inmediatamente** desde **System → User Manager → admin → Edit**.
+> Si el login default no funciona en tu versión de pfSense, resetea desde la consola
+> opción **3 (Reset webConfigurator password)**.
 
-### 6. Pruebas y documentación
+### 7. Instalar Apache, SSH y Samba en los servidores Linux
+Sigue [docs/02-instalacion-apache.md](docs/02-instalacion-apache.md) para el servidor
+DMZ. Para Servidor-LAN: `sudo apt install openssh-server samba -y`.
+
+### 8. Pruebas y documentación
 1. Lanza los ataques con [docs/03-ataques-kali.md](docs/03-ataques-kali.md)
-   (o ejecuta `scripts/ataques-desde-kali.sh` dentro de Kali).
+   (o ejecuta `./scripts/ataques-desde-kali.sh 10.0.2.X` dentro de Kali, donde 10.0.2.X es la IP WAN de pfSense).
 2. Toma capturas siguiendo [docs/04-capturas-wireshark.md](docs/04-capturas-wireshark.md).
 3. Marca evidencias con [docs/05-checklist-evidencias.md](docs/05-checklist-evidencias.md).
 4. Rellena [docs/informe-final.md](docs/informe-final.md) y haz `git push`.
+
+### ⚠️ Importante al apagar las VMs
+**NUNCA** uses `VBoxManage controlvm <vm> poweroff` (apagado forzado): corrompe los
+archivos `.vbox` de configuración. Usa SIEMPRE:
+- Desde dentro del SO: `sudo poweroff` (Linux) o `Halt` (opción 5 en consola pfSense).
+- Desde el host: `VBoxManage controlvm <vm> acpipowerbutton` (señal ACPI segura).
 
 ---
 

@@ -42,6 +42,8 @@
 			<protocol>https</protocol>
 			<loginautocomplete></loginautocomplete>
 			<ssl-certref>6a07c68f1cf3d</ssl-certref>
+			<max_procs>2</max_procs>
+			<roaming>enabled</roaming>
 		</webgui>
 		<disablenatreflection>yes</disablenatreflection>
 		<disablesegmentationoffloading></disablesegmentationoffloading>
@@ -56,9 +58,9 @@
 		</bogons>
 		<hn_altq_enable></hn_altq_enable>
 		<already_run_config_upgrade></already_run_config_upgrade>
-		<ssh>
-			<enable>enabled</enable>
-		</ssh>
+		<ssh></ssh>
+		<serialspeed>115200</serialspeed>
+		<primaryconsole>video</primaryconsole>
 	</system>
 	<interfaces>
 		<wan>
@@ -172,6 +174,30 @@
 			</rule>
 		</outbound>
 		<separator></separator>
+		<rule>
+			<source>
+				<address>10.0.2.15</address>
+			</source>
+			<destination>
+				<network>wanip</network>
+				<port>22</port>
+			</destination>
+			<ipprotocol>inet</ipprotocol>
+			<protocol>tcp</protocol>
+			<target>192.168.1.10</target>
+			<local-port>22</local-port>
+			<interface>wan</interface>
+			<descr><![CDATA[SSH solo desde Kali admin -&gt; LAN]]></descr>
+			<associated-rule-id>nat_6a0dd287e71af9.15308559</associated-rule-id>
+			<updated>
+				<time>1779290759</time>
+				<username><![CDATA[admin@10.0.2.2 (Local Database)]]></username>
+			</updated>
+			<created>
+				<time>1779290759</time>
+				<username><![CDATA[admin@10.0.2.2 (Local Database)]]></username>
+			</created>
+		</rule>
 		<rule>
 			<source>
 				<any></any>
@@ -321,6 +347,25 @@
 			<created>
 				<time>1779126911</time>
 				<username><![CDATA[admin@10.0.2.2 (Local Database)]]></username>
+			</created>
+		</rule>
+		<rule>
+			<source>
+				<address>10.0.2.15</address>
+			</source>
+			<interface>wan</interface>
+			<ipprotocol>inet</ipprotocol>
+			<protocol>tcp</protocol>
+			<destination>
+				<address>192.168.1.10</address>
+				<port>22</port>
+			</destination>
+			<descr><![CDATA[NAT SSH solo desde Kali admin -&gt; LAN]]></descr>
+			<associated-rule-id>nat_6a0dd287e71af9.15308559</associated-rule-id>
+			<tracker>1779290759</tracker>
+			<created>
+				<time>1779290759</time>
+				<username><![CDATA[NAT Port Forward]]></username>
 			</created>
 		</rule>
 		<rule>
@@ -769,8 +814,7 @@
 			<lan></lan>
 		</separator>
 	</filter>
-	<shaper>
-	</shaper>
+	<shaper></shaper>
 	<ipsec>
 		<client></client>
 	</ipsec>
@@ -885,8 +929,7 @@
 		<period>10</period>
 	</widgets>
 	<openvpn></openvpn>
-	<dnshaper>
-	</dnshaper>
+	<dnshaper></dnshaper>
 	<unbound>
 		<enable></enable>
 		<dnssec></dnssec>
@@ -900,12 +943,11 @@
 	<vlans></vlans>
 	<qinqs></qinqs>
 	<revision>
-		<time>1779205267</time>
-		<description><![CDATA[admin@10.0.2.2 (Local Database): Firewall: Rules - saved/edited a firewall rule.]]></description>
+		<time>1779292005</time>
+		<description><![CDATA[admin@10.0.2.2 (Local Database): Firewall: Rules - reordered firewall rules.]]></description>
 		<username><![CDATA[admin@10.0.2.2 (Local Database)]]></username>
 	</revision>
-	<gateways>
-	</gateways>
+	<gateways></gateways>
 	<captiveportal></captiveportal>
 	<dnsmasq></dnsmasq>
 	<ntpd>

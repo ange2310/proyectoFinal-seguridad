@@ -132,7 +132,7 @@ Al terminar, en la consola de pfSense:
 
 Ejemplo: `.\scripts\port-forward-gui-pfsense.ps1 10.0.2.4`
 
-### 6. Importar la configuración de pfSense (≈ 30 segundos) ⚡
+### 6. Importar la configuración de pfSense (≈ 30 segundos)
 Esto te ahorra crear todas las reglas a mano (NAT outbound, port forwards, reglas WAN/LAN/DMZ, alias):
 1. En el navegador: `https://127.0.0.1:8443`
 2. Login default: `admin` / `pfsense`
@@ -143,7 +143,7 @@ Esto te ahorra crear todas las reglas a mano (NAT outbound, port forwards, regla
    - Clic en **Restore Configuration**
 5. pfSense se reinicia → ya tienes todas las reglas, NAT, alias, etc.
 
-> ⚠️ **Importante sobre la contraseña admin:** la del XML está sanitizada (el hash
+> **Importante sobre la contraseña admin:** la del XML está sanitizada (el hash
 > original se reemplazó por el default de pfSense para no exponer credenciales en
 > un repo público). Después de importar, entra con `admin` / `pfsense` y **cámbiala
 > inmediatamente** desde **System → User Manager → admin → Edit**.
@@ -161,7 +161,7 @@ DMZ. Para Servidor-LAN: `sudo apt install openssh-server samba -y`.
 3. Marca evidencias con [docs/05-checklist-evidencias.md](docs/05-checklist-evidencias.md).
 4. Rellena [docs/informe-final.md](docs/informe-final.md) y haz `git push`.
 
-### ⚠️ Importante al apagar las VMs
+### Importante al apagar las VMs
 **NUNCA** uses `VBoxManage controlvm <vm> poweroff` (apagado forzado): corrompe los
 archivos `.vbox` de configuración. Usa SIEMPRE:
 - Desde dentro del SO: `sudo poweroff` (Linux) o `Halt` (opción 5 en consola pfSense).

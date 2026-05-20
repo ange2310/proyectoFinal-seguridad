@@ -31,7 +31,7 @@ mediante pruebas de ataque controladas la efectividad de las reglas.
 
 Ver detalle en [topologia-red.md](topologia-red.md).
 
-`[INSERTAR CAPTURA: diagrama-topologia.png (puede ser el ASCII de topologia-red.md o un diagrama hecho en draw.io)]`
+Ver diagrama detallado en [topologia-red.md](topologia-red.md).
 
 | VM                | Sistema       | IP              | Rol                       |
 |-------------------|---------------|-----------------|---------------------------|
@@ -56,11 +56,11 @@ Ver detalle en [topologia-red.md](topologia-red.md).
 
 ### 5.1 Interfaces
 
-`[INSERTAR CAPTURA: pfsense-interfaces.png]`
+![Estado de las interfaces de pfSense](../capturas/pfsense-interfaces.png)
 
 ### 5.2 Reglas WAN
 
-`[INSERTAR CAPTURA: pfsense-reglas-wan.png]`
+![Reglas de la interfaz WAN](../capturas/pfsense-reglas-wan.png)
 
 | N° | Acción | Origen     | Destino       | Puerto | Justificación                          |
 |----|--------|------------|---------------|--------|----------------------------------------|
@@ -71,7 +71,7 @@ Ver detalle en [topologia-red.md](topologia-red.md).
 
 ### 5.3 Reglas DMZ (OPT1)
 
-`[INSERTAR CAPTURA: pfsense-reglas-dmz.png]`
+![Reglas de la interfaz DMZ (OPT1)](../capturas/pfsense-reglas-dmz.png)
 
 | N° | Acción | Origen           | Destino          | Puerto    | Justificación                              |
 |----|--------|------------------|------------------|-----------|--------------------------------------------|
@@ -80,7 +80,7 @@ Ver detalle en [topologia-red.md](topologia-red.md).
 
 ### 5.4 Reglas LAN
 
-`[INSERTAR CAPTURA: pfsense-reglas-lan.png]`
+![Reglas de la interfaz LAN](../capturas/pfsense-reglas-lan.png)
 
 | N° | Acción | Protocolo | Puerto    | Justificación                       |
 |----|--------|-----------|-----------|-------------------------------------|
@@ -91,7 +91,7 @@ Ver detalle en [topologia-red.md](topologia-red.md).
 
 ### 5.5 NAT Port Forward
 
-`[INSERTAR CAPTURA: pfsense-nat.png]`
+![NAT Port Forward configurados](../capturas/pfsense-nat.png)
 
 | WAN port | Destino interno  | Servicio |
 |----------|------------------|----------|
@@ -102,8 +102,8 @@ Ver detalle en [topologia-red.md](topologia-red.md).
 
 Instalación documentada en [02-instalacion-apache.md](02-instalacion-apache.md).
 
-`[INSERTAR CAPTURA: apache-status.png]`
-`[INSERTAR CAPTURA: apache-navegador.png]`
+![Estado de Apache en la DMZ](../capturas/apache-status.png)
+![Servidor web abierto en navegador](../capturas/apache-navegador.png)
 
 ## 7. Pruebas de ataque y resultados
 
@@ -111,20 +111,20 @@ Procedimiento completo en [03-ataques-kali.md](03-ataques-kali.md).
 
 ### 7.1 Escaneo de puertos básico
 
-**Comando:** `nmap -sS -p 1-1024 10.0.2.2`
+**Comando:** `nmap -sS -p 1-1024 10.0.2.5`
 
 **Resultado esperado:** solo 80 y 443 abiertos. Resto `filtered` (firewall) o `closed`.
 
-`[INSERTAR CAPTURA: nmap-puertos-comunes.png]`
+![Escaneo de puertos comunes con nmap](../capturas/nmap-puertos-comunes.png)
 
 **Análisis:** las reglas WAN están funcionando — solo los puertos publicados son
 visibles desde el exterior.
 
 ### 7.2 Detección de versión
 
-**Comando:** `nmap -sV -p 80,443 10.0.2.2`
+**Comando:** `nmap -sV -p 80,443 10.0.2.5`
 
-`[INSERTAR CAPTURA: nmap-version-apache.png]`
+![Detección de versión de Apache con nmap -sV](../capturas/nmap-version-apache.png)
 
 **Análisis:** Apache responde con la versión, lo cual es información útil para el
 atacante. **Mitigación recomendada:** ocultar tokens (`ServerTokens Prod` y
@@ -134,34 +134,35 @@ atacante. **Mitigación recomendada:** ocultar tokens (`ServerTokens Prod` y
 
 **Comando:** `nmap -sS -p 22,80,445 192.168.1.10` desde Kali.
 
-`[INSERTAR CAPTURA: nmap-lan-bloqueado.png]`
+![Escaneo a la LAN bloqueado por el firewall](../capturas/nmap-lan-bloqueado.png)
 
 **Análisis:** todos los puertos aparecen `filtered`. La LAN está aislada de la WAN
 y de la DMZ. ✅
 
-### 7.4 Fuerza bruta SSH
+### 7.4 Validación de regla "SSH solo desde IP administrativa"
 
-**Comando:** `hydra -l admin -P rockyou.txt ssh://10.0.2.2`
+**Comando desde Kali (IP autorizada `10.0.2.15`):** `ssh lan@10.0.2.5`
 
-`[INSERTAR CAPTURA: hydra-ssh-bloqueado.png]`
+![SSH desde Kali alcanza el servidor LAN a través de pfSense](../capturas/ssh-desde-kali-OK.png)
 
-**Análisis:** las conexiones son rechazadas porque solo la IP administrativa está
-autorizada en la regla 3 de WAN. ✅
+**Análisis:** la conexión SSH desde Kali llega correctamente al servidor LAN
+(`192.168.1.10`) atravesando el firewall pfSense por el NAT Port Forward
+configurado. Esto demuestra dos cosas críticas:
 
-### 7.5 Explotación con Metasploit
+1. **El port forward funciona** (`WAN:22 → 192.168.1.10:22`).
+2. **La regla "Source: 10.0.2.15"** filtra el origen: solo Kali (IP administrativa)
+   puede usar este port forward. Cualquier otra IP intentando lo mismo recibiría
+   un timeout silencioso (la regla por defecto bloquea sin responder, generando
+   evidencia en los logs).
 
-**Módulo:** `exploit/multi/http/apache_normalize_path_rce`
-
-`[INSERTAR CAPTURA: metasploit-exploit-fallido.png]`
-
-**Análisis:** el exploit falla porque la versión de Apache está parchada y el
-firewall filtra los intentos repetidos.
+El servidor LAN nunca está expuesto directamente al exterior — toda conexión
+pasa por el firewall, que verifica origen, protocolo y destino antes de reenviar. ✅
 
 ### 7.6 DoS simulado (SYN flood)
 
-**Comando:** `hping3 -S -p 80 --flood 10.0.2.2` (5 segundos)
+**Comando:** `hping3 -S -p 80 --flood 10.0.2.5` (5 segundos)
 
-`[INSERTAR CAPTURA: hping-flood-logs-pfsense.png]`
+![Logs de pfSense mostrando los paquetes bloqueados del escaneo y flood desde Kali](../capturas/pfsense-logs-bloqueados.png)
 
 **Análisis:** pfSense registra y bloquea (en parte) el flood en sus logs. Para
 mitigación real se recomendaría activar **pfBlockerNG** o limitar conexiones por
@@ -169,9 +170,9 @@ segundo en las reglas (`Advanced Options → Max new connections per second`).
 
 ### 7.7 Control positivo
 
-**Comando:** `curl -v http://10.0.2.2`
+**Comando:** `curl -v http://10.0.2.5`
 
-`[INSERTAR CAPTURA: curl-dmz-ok.png]`
+![Servidor web responde correctamente al curl](../capturas/curl-dmz-ok.png)
 
 **Análisis:** el servicio publicado responde correctamente — el firewall no está
 sobre-bloqueando.
@@ -180,9 +181,15 @@ sobre-bloqueando.
 
 Procedimiento en [04-capturas-wireshark.md](04-capturas-wireshark.md).
 
-`[INSERTAR CAPTURA: wireshark-http-ok.png]`
-`[INSERTAR CAPTURA: wireshark-syn-bloqueado.png]`
-`[INSERTAR CAPTURA: pfsense-logs-bloqueados.png]`
+![Logs de pfSense con 500 entradas BLOCK registradas durante el ataque](../capturas/pfsense-logs-bloqueados.png)
+
+**Análisis del log:** las 500 entradas (máximo mostrado) corresponden todas a
+`Source: 10.0.2.15` (Kali) intentando conectarse a múltiples puertos de
+`Destination: 10.0.2.5` (WAN de pfSense). La regla "Bloquear y registrar todo lo
+demas" capturó y registró cada intento. Esto demuestra que el firewall:
+- **Detecta** los escaneos de red.
+- **Bloquea** todo intento no autorizado.
+- **Registra** cada bloqueo para auditoría posterior.
 
 **Archivos .pcap entregados:** `capturas/wireshark-ataque.pcapng`, `capturas/pfsense-pcap-wan.pcap`
 
